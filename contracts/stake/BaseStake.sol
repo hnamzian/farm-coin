@@ -4,8 +4,13 @@ pragma solidity ^0.8.0;
 
 import "./StakeStates.sol";
 import "./StakeExecutor.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 
 contract BaseStake is StakeStates, StakeExecutor {
+    using Counters for Counters.Counter;
+
+    uint256 internal _earlyWithdrawPunishmentRateX100 = 90;
+
     /**
      * @dev Staked Event will be raised at stake
      * @param lockupOption lockup option tokens staked
@@ -35,10 +40,7 @@ contract BaseStake is StakeStates, StakeExecutor {
      * @param lockupOption_ the lockup option tokens to be staked
      * @param amount_ amount of tokens to be staked
      */
-    function stake(
-        LockupOption lockupOption_,
-        uint256 amount_
-    ) public virtual {
+    function stake(LockupOption lockupOption_, uint256 amount_) public virtual {
         _beforeStake(lockupOption_, msg.sender, amount_);
 
         _updateStakes(lockupOption_, msg.sender, amount_);
@@ -54,10 +56,10 @@ contract BaseStake is StakeStates, StakeExecutor {
      * @param lockupOption_ lockup option tokens unstaked
      * @param amount_ amount of tokens to be unstaked
      */
-    function unstake(
-        LockupOption lockupOption_,
-        uint256 amount_
-    ) public virtual {
+    function unstake(LockupOption lockupOption_, uint256 amount_)
+        public
+        virtual
+    {
         _beforeUnstake(lockupOption_, msg.sender, amount_);
 
         _unstake(lockupOption_, msg.sender, amount_);
@@ -123,9 +125,10 @@ contract BaseStake is StakeStates, StakeExecutor {
         address staker_,
         uint256 amount_
     ) internal {
-        require(stakesLockupOf(lockupOption_, staker_) >= amount_, "Insufficient stakes");
-        
-        // TODO investigate amount staker can unstake or punish by 10%
+        require(
+            stakesLockupOf(lockupOption_, staker_) >= amount_,
+            "Insufficient stakes"
+        );
 
         _decreaseIndividualStakes(lockupOption_, staker_, amount_);
         _decreaseTotalStakes(lockupOption_, amount_);
@@ -153,5 +156,50 @@ contract BaseStake is StakeStates, StakeExecutor {
         LockupOption lockupOption_,
         address staker_,
         uint256 amount_
-    ) internal {}
+    ) internal {
+        uint256 _unlockedAmount = _canUnstakeLockup(lockupOption_, staker_);
+        uint256 _transferAmount = _unlockedAmount +
+            ((amount_ - _unlockedAmount) * _earlyWithdrawPunishmentRateX100) /
+            100;
+        _executeUnstake(staker_, _transferAmount);
+    }
+
+    /**
+     * @dev returns amount of token staker can unstake now from a specified lockup option
+     * @param lockupOption_ lockup option must be scanned for total amount can be unstaked
+     * @param staker_ address of staker must be verified for total tokens permitted to unstake
+     */
+    function _canUnstakeLockup(LockupOption lockupOption_, address staker_)
+        internal
+        view
+        returns (uint256 _unstakeables)
+    {
+        uint256 _stakesBalance = _stakes[lockupOption_][staker_];
+
+        if (lockupOption_ == LockupOption.NO_LOCKUP) {
+            return _stakesBalance;
+        }
+
+        Counters.Counter storage _stakeCounter = _stakeCounters[lockupOption_][
+            staker_
+        ];
+
+        uint256 _toBeScannedStakes = _stakesBalance;
+        uint256 _stakeIndex = _stakeCounter.current() - 1;
+
+        while (_toBeScannedStakes > 0) {
+            Stake memory _indexedStake = _stakesHistory[lockupOption_][staker_][
+                _stakeIndex
+            ];
+            if (block.timestamp < _indexedStake.lockedUntil) {
+                _toBeScannedStakes = _toBeScannedStakes > _indexedStake.amount
+                    ? _toBeScannedStakes - _indexedStake.amount
+                    : 0;
+                _stakeIndex = _stakeIndex > 0 ? _stakeIndex - 1 : 0;
+            } else {
+                _unstakeables = _toBeScannedStakes;
+                _toBeScannedStakes = 0;
+            }
+        }
+    }
 }
