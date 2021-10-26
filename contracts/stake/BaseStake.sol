@@ -3,8 +3,9 @@
 pragma solidity ^0.8.0;
 
 import "./StakeStates.sol";
+import "./StakeExecutor.sol";
 
-contract BaseStake is StakeStates {
+contract BaseStake is StakeStates, StakeExecutor {
     /**
      * @dev Staked Event will be raised at stake
      * @param lockupOption lockup option tokens staked
@@ -76,5 +77,7 @@ contract BaseStake is StakeStates {
         LockupOption lockupOption_,
         address staker_,
         uint256 amount_
-    ) internal {}
+    ) internal {
+        _executeStake(staker_, amount_);
+    }
 }
