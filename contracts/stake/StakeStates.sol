@@ -51,7 +51,6 @@ contract StakeStates is LockupPeriod {
      */
     mapping(LockupOption => uint256) internal _totalStakes;
 
-
     /**
      * @dev returns total staked amount of tokens to a specified lockup optin by all addresses
      * @param lockupOption_ lockup option to which which can be: (NO_LOCKUP, SIX_MONTH_LOCKUP, ONE_YEAR_LOCKUP)
@@ -69,11 +68,7 @@ contract StakeStates is LockupPeriod {
      * @dev returns total staked amount of tokens over all lockup optins by all addresses
      * @return _totalStaked uint256 total amount of tokens staked over all lockup optins by all addresses
      */
-    function totalStakes()
-        public
-        view
-        returns (uint256 _totalStaked)
-    {
+    function totalStakes() public view returns (uint256 _totalStaked) {
         uint8 _lockupOption;
         for (
             _lockupOption = uint8(LockupOption.NO_LOCKUP);
@@ -90,10 +85,11 @@ contract StakeStates is LockupPeriod {
      * @param staker_ address of staker
      * @return uint256 total amount of tokens staked to a specified lockup optin by the staker
      */
-    function stakesLockupOf(
-        LockupOption lockupOption_,
-        address staker_
-    ) public view returns (uint256) {
+    function stakesLockupOf(LockupOption lockupOption_, address staker_)
+        public
+        view
+        returns (uint256)
+    {
         return _stakes[lockupOption_][staker_];
     }
 
@@ -120,19 +116,18 @@ contract StakeStates is LockupPeriod {
         }
     }
 
-
     /**
      * @dev increases total amount of tokens has been staked by an address
      * to a specified lockup option
      * @param lockupOption the lockup option to which tokens staked
      * @param staker_ address of staker
-     * @param amount_ amount of tokens must be added to staker's total staked amount 
+     * @param amount_ amount of tokens must be added to staker's total staked amount
      * of a specified lockup option
      */
     function _increaseIndividualStakes(
-        uint256 amount_,
         LockupOption lockupOption,
-        address staker_
+        address staker_,
+        uint256 amount_
     ) internal {
         _stakes[lockupOption][staker_] =
             _stakes[lockupOption][staker_] +
@@ -144,13 +139,13 @@ contract StakeStates is LockupPeriod {
      * to a specified lockup option
      * @param lockupOption the lockup option to which tokens staked
      * @param staker_ address of staker
-     * @param amount_ amount of tokens must be subtracted from staker's total staked amount 
+     * @param amount_ amount of tokens must be subtracted from staker's total staked amount
      * of a specified lockup option
      */
     function _decreaseIndividualStakes(
-        uint256 amount_,
         LockupOption lockupOption,
-        address staker_
+        address staker_,
+        uint256 amount_
     ) internal {
         _stakes[lockupOption][staker_] =
             _stakes[lockupOption][staker_] -
@@ -161,13 +156,12 @@ contract StakeStates is LockupPeriod {
      * @dev increases total amount of tokens has been staked by all address
      * to a specified lockup option
      * @param lockupOption the lockup option to which tokens staked
-     * @param amount_ amount of tokens must be added to total staked amount 
+     * @param amount_ amount of tokens must be added to total staked amount
      * of a specified lockup option
      */
-    function _increaseTotalStakes(
-        uint256 amount_,
-        LockupOption lockupOption
-    ) internal {
+    function _increaseTotalStakes(LockupOption lockupOption, uint256 amount_)
+        internal
+    {
         _totalStakes[lockupOption] = _totalStakes[lockupOption] + amount_;
     }
 
@@ -175,13 +169,39 @@ contract StakeStates is LockupPeriod {
      * @dev increases total amount of specified LP tokens has been staked by all address
      * to a specified lockup option
      * @param lockupOption the lockup option to which tokens staked
-     * @param amount_ amount of tokens must be subtracted from total staked amount 
+     * @param amount_ amount of tokens must be subtracted from total staked amount
      * of a specified lockup option
      */
-    function _decreaseTotalStakes(
-        uint256 amount_,
-        LockupOption lockupOption
-    ) internal {
+    function _decreaseTotalStakes(LockupOption lockupOption, uint256 amount_)
+        internal
+    {
         _totalStakes[lockupOption] = _totalStakes[lockupOption] - amount_;
+    }
+
+    /**
+     * @dev inserts a new Stake object to StakeHistory of a specified staker address list,
+     * and updating StakesCounter
+     * @param lockupOption_ the lockup option tokens staked
+     * @param staker_ address of staker
+     * @param amount_ amount of tokens staked by staker
+     */
+    function _appendToStakesHistory(
+        LockupOption lockupOption_,
+        address staker_,
+        uint256 amount_
+    ) internal {
+        Counters.Counter storage _counter = _stakeCounters[lockupOption_][
+            msg.sender
+        ];
+
+        uint256 _stakeIndex = _counter.current();
+
+        _counter.increment();
+
+        _stakesHistory[lockupOption_][staker_][_stakeIndex] = Stake(
+            amount_,
+            block.timestamp,
+            block.timestamp + lockupPeriod(lockupOption_)
+        );
     }
 }
