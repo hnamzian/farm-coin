@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.8;
+pragma solidity ^0.8.0;
 
 import "../lockup/LockupPeriod.sol";
 
@@ -19,4 +19,72 @@ contract RewardStates is LockupPeriod {
      * stakes to each lockup option
      */
     mapping(LockupOption => uint256) internal _totalRewards;
+
+    /**
+     * @dev returns total tokens rewarded to addresses staked tokens
+     * @param lockupOption_ uint8 representing Reward lockup option
+     * @return total rewards paid for tokens staked to a specified lockup option
+     */
+    function totalRewardsLockupOption(LockupOption lockupOption_)
+        public
+        view
+        returns (uint256)
+    {
+        return _totalRewards[lockupOption_];
+    }
+
+    /**
+     * @dev returns total tokens rewarded to addresses staked
+     * tokens to a specified lockup option
+     * @return _rewards total rewards paid for tokens staked
+     */
+    function totalRewards()
+        public
+        view
+        returns (uint256 _rewards)
+    {
+        uint8 _lockupOption;
+        for (
+            _lockupOption = uint8(LockupOption.NO_LOCKUP);
+            _lockupOption <= uint8(LockupOption.ONE_YEAR_LOCKUP);
+            _lockupOption++
+        ) {
+            _rewards += totalRewardsLockupOption(LockupOption(_lockupOption));
+        }
+    }
+
+    /**
+     * @dev returns total tokens rewarded to a specified rewardee_ staked
+     * tokens to a specified lockup option
+     * @param lockupOption_ uint8 representing Reward lockup option
+     * @param rewardee_ address of one's been rewarded
+     * @return total rewards paid for tokens staked to lockup option by reardee_
+     */
+    function totalRewardsOfLockupOption(LockupOption lockupOption_, address rewardee_)
+        public
+        view
+        returns (uint256)
+    {
+        return _totalRewardsOf[lockupOption_][rewardee_];
+    }
+
+    /**
+     * @dev returns total tokens rewarded to a specified rewardee_ staked tokens
+     * @param rewardee_ address of one's been rewarded
+     * @return _rewards total rewards paid for tokens staked to lockup option by reardee_
+     */
+    function totalRewardsOf(address rewardee_)
+        public
+        view
+        returns (uint256 _rewards)
+    {
+        uint8 _lockupOption;
+        for (
+            _lockupOption = uint8(LockupOption.NO_LOCKUP);
+            _lockupOption <= uint8(LockupOption.ONE_YEAR_LOCKUP);
+            _lockupOption++
+        ) {
+            _rewards += totalRewardsOfLockupOption(LockupOption(_lockupOption), rewardee_);
+        }
+    }
 }
