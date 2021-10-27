@@ -5,19 +5,26 @@ pragma solidity ^0.8.0;
 import "./RewardCalculator.sol";
 
 contract ClaimReward is RewardCalculator {
+    event Rewarded(LockupOption indexed, address indexed, uint256);
 
     /**
      * @dev assign amount of tokens must be rewarded to a specified rewardee
      * according to its stakes at a specified lockup option
      * @param lockupOption_ uint8 representing Reward lockup option
-     * @param rewardee_ account address of rewardee 
+     * @param rewardee_ account address of rewardee
      */
-    function _reward(LockupOption lockupOption_, address rewardee_) internal {
-        uint256 _rewardsOf = _calculateRewardsOf(lockupOption_, rewardee_);
+    function _reward(LockupOption lockupOption_, address rewardee_)
+        internal
+        virtual
+        returns (uint256 _rewardsOf)
+    {
+        _rewardsOf = _calculateRewardsOf(lockupOption_, rewardee_);
 
         _increaseTotalRewardsOf(lockupOption_, rewardee_, _rewardsOf);
         _increaseTotalRewards(lockupOption_, _rewardsOf);
         _updateLastTimeRewardedTo(lockupOption_, rewardee_);
+
+        emit Rewarded(lockupOption_, rewardee_, _rewardsOf);
     }
 
     /**
