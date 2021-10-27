@@ -16,15 +16,15 @@ contract LockupPeriod {
     enum LockupOption {
         NO_LOCKUP,
         SIX_MOTH_LOCKUP,
-        ON_YEAR_LOCKUP
+        ONE_YEAR_LOCKUP
     }
 
     mapping(LockupOption => uint256) internal _lockupPeriod;
 
     constructor() {
         _setLockupPeriod(LockupOption.NO_LOCKUP, 0);
-        _setLockupPeriod(LockupOption.NO_LOCKUP, 180 days);
-        _setLockupPeriod(LockupOption.NO_LOCKUP, 365 days);
+        _setLockupPeriod(LockupOption.SIX_MOTH_LOCKUP, 180 days);
+        _setLockupPeriod(LockupOption.ONE_YEAR_LOCKUP, 365 days);
     }
 
     function lockupPeriod(LockupOption lockupOption_)
