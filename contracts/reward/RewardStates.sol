@@ -38,11 +38,7 @@ contract RewardStates is LockupPeriod {
      * tokens to a specified lockup option
      * @return _rewards total rewards paid for tokens staked
      */
-    function totalRewards()
-        public
-        view
-        returns (uint256 _rewards)
-    {
+    function totalRewards() public view returns (uint256 _rewards) {
         uint8 _lockupOption;
         for (
             _lockupOption = uint8(LockupOption.NO_LOCKUP);
@@ -60,11 +56,10 @@ contract RewardStates is LockupPeriod {
      * @param rewardee_ address of one's been rewarded
      * @return total rewards paid for tokens staked to lockup option by reardee_
      */
-    function totalRewardsOfLockupOption(LockupOption lockupOption_, address rewardee_)
-        public
-        view
-        returns (uint256)
-    {
+    function totalRewardsOfLockupOption(
+        LockupOption lockupOption_,
+        address rewardee_
+    ) public view returns (uint256) {
         return _totalRewardsOf[lockupOption_][rewardee_];
     }
 
@@ -84,7 +79,38 @@ contract RewardStates is LockupPeriod {
             _lockupOption <= uint8(LockupOption.ONE_YEAR_LOCKUP);
             _lockupOption++
         ) {
-            _rewards += totalRewardsOfLockupOption(LockupOption(_lockupOption), rewardee_);
+            _rewards += totalRewardsOfLockupOption(
+                LockupOption(_lockupOption),
+                rewardee_
+            );
         }
+    }
+
+    /**
+     * @dev increases total amount of tokens rewarded for tokens
+     * staked to a specified lockup option
+     * @param lockupOption_ uint8 representing Reward lockup option
+     * @param amount_ amount of tokens recently rewarded
+     */
+    function _increaseTotalRewards(
+        LockupOption lockupOption_,
+        uint256 amount_
+    ) internal {
+        _totalRewards[lockupOption_] += amount_;
+    }
+
+    /**
+     * @dev increases total amount of tokens rewarded for tokens
+     * staked to a specified lockup option to specified rewardee_
+     * @param lockupOption_ uint8 representing Reward lockup option
+     * @param rewardee_ address of one's been rewarded
+     * @param amount_ amount of tokens recently rewarded
+     */
+    function _increaseTotalRewardsOf(
+        LockupOption lockupOption_,
+        address rewardee_,
+        uint256 amount_
+    ) internal {
+        _totalRewardsOf[lockupOption_][rewardee_] += amount_;
     }
 }
