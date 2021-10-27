@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 contract BaseStake is StakeStates, StakeExecutor {
     using Counters for Counters.Counter;
 
-    uint256 internal _earlyWithdrawPunishmentRateX100 = 90;
+    uint256 internal _earlyWithdrawPunishmentRateX100 = 10;
 
     /**
      * @dev Staked Event will be raised at stake
@@ -158,9 +158,10 @@ contract BaseStake is StakeStates, StakeExecutor {
         uint256 amount_
     ) internal {
         uint256 _unlockedAmount = _canUnstakeLockup(lockupOption_, staker_);
-        uint256 _transferAmount = _unlockedAmount +
-            ((amount_ - _unlockedAmount) * _earlyWithdrawPunishmentRateX100) /
-            100;
+        uint256 _earlyWithdrawPunishment = ((amount_ - _unlockedAmount) *
+            _earlyWithdrawPunishmentRateX100) / 100;
+        uint256 _transferAmount = amount_ - _earlyWithdrawPunishment;
+
         _executeUnstake(staker_, _transferAmount);
     }
 
