@@ -21,6 +21,13 @@ contract RewardStates is LockupPeriod {
     mapping(LockupOption => uint256) internal _totalRewards;
 
     /**
+     * @dev (lockupOption => rewardee => timestamp)
+     * determines last timestamp an account rewarded for stakes in a specified lockup option
+     */
+    mapping(LockupOption => mapping(address => uint256))
+        internal _lastTimeRewardedTo;
+
+    /**
      * @dev returns total tokens rewarded to addresses staked tokens
      * @param lockupOption_ uint8 representing Reward lockup option
      * @return total rewards paid for tokens staked to a specified lockup option
@@ -87,15 +94,41 @@ contract RewardStates is LockupPeriod {
     }
 
     /**
+     * @dev returns latest timestamp a specified rewardee rewarded for stakes in
+     * a specified lockup option
+     * @param lockupOption_ uint8 representing Reward lockup option
+     * @param rewardee_ address of one's been rewarded
+     */
+    function lastTimeRewardedTo(LockupOption lockupOption_, address rewardee_)
+        public
+        view
+        returns (uint256)
+    {
+        return _lastTimeRewardedTo[lockupOption_][rewardee_];
+    }
+
+    /**
+     * @dev sets latest timestamp a specified rewardee rewarded for stakes in
+     * a specified lockup option to current timetamp
+     * @param lockupOption_ uint8 representing Reward lockup option
+     * @param rewardee_ address of one's been rewarded
+     */
+    function _updateLastTimeRewardedTo(
+        LockupOption lockupOption_,
+        address rewardee_
+    ) internal {
+        _lastTimeRewardedTo[lockupOption_][rewardee_] = block.timestamp;
+    }
+
+    /**
      * @dev increases total amount of tokens rewarded for tokens
      * staked to a specified lockup option
      * @param lockupOption_ uint8 representing Reward lockup option
      * @param amount_ amount of tokens recently rewarded
      */
-    function _increaseTotalRewards(
-        LockupOption lockupOption_,
-        uint256 amount_
-    ) internal {
+    function _increaseTotalRewards(LockupOption lockupOption_, uint256 amount_)
+        internal
+    {
         _totalRewards[lockupOption_] += amount_;
     }
 
