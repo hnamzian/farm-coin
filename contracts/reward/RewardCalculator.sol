@@ -2,9 +2,10 @@
 
 pragma solidity ^0.8.0;
 
-import "../lockup/LockupPeriod.sol";
+import "./RewardStates.sol";
+import "../stake/StakeStates.sol";
 
-contract RewardCalculator is LockupPeriod {
+contract RewardCalculator is RewardStates, StakeStates {
     /**
      * @dev (lockupOption => rewardRate)
      * determines reward rate assigned to each lockup option
@@ -39,5 +40,48 @@ contract RewardCalculator is LockupPeriod {
         internal
     {
         _rewardRates[lockupOption_] = rewardRate_;
+    }
+
+    /**
+     * @dev calculate rewards of a specified rewardee for tokens staked
+     * in a specified lockup option
+     * @param lockupOption_ uint8 representing Reward lockup option
+     * @param rewardee_ address of rewardee
+     * @return amount of rewards
+     */
+    function _calculateRewardsOf(LockupOption lockupOption_, address rewardee_)
+        internal
+        view
+        returns (uint256)
+    {
+        uint256 _stakesOf = stakesLockupOf(lockupOption_, rewardee_);
+        uint256 _lastTimeRewarded = lastTimeRewardedTo(
+            lockupOption_,
+            rewardee_
+        );
+
+        return _calculateRewards(lockupOption_, _stakesOf, _lastTimeRewarded);
+    }
+
+    /**
+     * @dev helper function to calculate rewards geiven lockup option, stakes amount,
+     * last time rewarded
+     * @param lockupOption_ uint8 representing Reward lockup option
+     * @param stakes_ amount of tokens staked by an account in the lockup option
+     * @param lastTimeRewarded_ latest time account rewarded
+     * @return amount of rewards
+     */
+    function _calculateRewards(
+        LockupOption lockupOption_,
+        uint256 stakes_,
+        uint256 lastTimeRewarded_
+    ) private view returns (uint256) {
+        uint256 _timePassed = block.timestamp - lastTimeRewarded_;
+
+        uint256 _lockupPeriodSeconds = lockupPeriod(lockupOption_);
+
+        return
+            (stakes_ * _timePassed * uint256(rewardRate(lockupOption_))) /
+            (100 * _lockupPeriodSeconds);
     }
 }
