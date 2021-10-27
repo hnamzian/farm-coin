@@ -4,9 +4,10 @@ pragma solidity ^0.8.0;
 
 import "./StakeStates.sol";
 import "./StakeExecutor.sol";
+import "../reward/ClaimReward.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
-contract BaseStake is StakeStates, StakeExecutor {
+contract BaseStake is StakeStates, StakeExecutor, ClaimReward {
     using Counters for Counters.Counter;
 
     uint256 internal _earlyWithdrawPunishmentRateX100 = 10;
@@ -97,7 +98,9 @@ contract BaseStake is StakeStates, StakeExecutor {
         LockupOption lockupOption_,
         address staker_,
         uint256 amount_
-    ) internal {}
+    ) internal {
+        _reward(lockupOption_, staker_);
+    }
 
     /**
      * @dev post-processing routin after unstaking token
@@ -144,7 +147,9 @@ contract BaseStake is StakeStates, StakeExecutor {
         LockupOption lockupOption_,
         address staker_,
         uint256 amount_
-    ) internal {}
+    ) internal {
+        _reward(lockupOption_, staker_);
+    }
 
     /**
      * @dev post-processing routin after unstaking token
