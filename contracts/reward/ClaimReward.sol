@@ -5,6 +5,8 @@ pragma solidity ^0.8.0;
 import "./RewardCalculator.sol";
 
 contract ClaimReward is RewardCalculator {
+    event Rewarded(LockupOption indexed, address indexed, uint256);
+
     /**
      * @dev assign amount of tokens must be rewarded to a specified rewardee
      * according to its stakes at a specified lockup option
@@ -21,6 +23,8 @@ contract ClaimReward is RewardCalculator {
         _increaseTotalRewardsOf(lockupOption_, rewardee_, _rewardsOf);
         _increaseTotalRewards(lockupOption_, _rewardsOf);
         _updateLastTimeRewardedTo(lockupOption_, rewardee_);
+
+        emit Rewarded(lockupOption_, rewardee_, _rewardsOf);
     }
 
     /**
