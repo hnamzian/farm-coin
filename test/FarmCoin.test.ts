@@ -59,4 +59,40 @@ describe("FarmCoin", () => {
     }
   })
 
+  it("should reward staker if claimed", async () => {
+    const [owner] = await ethers.getSigners();
+
+    const fctInitOwnerBalance = await farmCoin.balanceOf(owner.address);
+
+    const staker = new Staker();
+
+    for (const lockupOption in lockupOptions) 
+    {
+      const stakeAmount = parseUnits(random.int(1000, 1000).toString());
+
+      await usdc.approve(farmCoin.address, stakeAmount);
+      await farmCoin.stake(lockupOption, stakeAmount);
+
+      // simulatate staking to FarmCoin
+      await staker.stake(+lockupOption, stakeAmount);
+
+      const depositPeriod = 1 * YEAR;
+      await EVM.increaseEVMTimestamp(depositPeriod);
+
+      await farmCoin["claim()"]();
+
+      await staker.updateRewards();
+      
+      expect(
+        await farmCoin.totalRewardsOfLockupOption(lockupOption, owner.address)
+      ).to.be.eq(staker.totalRewardsLockup(+lockupOption));
+      expect(
+        await farmCoin.totalRewardsOf(owner.address)
+      ).to.be.eq(staker.totalRewards());
+
+      expect(
+        await farmCoin.balanceOf(owner.address)
+      ).to.be.eq(fctInitOwnerBalance.add(staker._totalRewards))
+    }
+  })
 })
