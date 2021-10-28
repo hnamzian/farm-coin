@@ -3,21 +3,15 @@ import { ethers } from "hardhat";
 import { formatUnits, parseUnits } from "@ethersproject/units";
 import { Contract } from "@ethersproject/contracts";
 import { default as random } from "random";
-import { EVM } from "./helper/evm"
+import {
+  lockupOptions,
+  LockupOptions,
+  rewardRates,
+  Staker,
+  YEAR } from "./helper/FarmCoin"
+import { EVM } from "./helper/evm";
 
 let farmCoin: Contract, usdc: Contract;;
-
-const DAY = 24 * 60 * 60;
-const YEAR = 365 * DAY;
-
-enum LockupOptions {
-  NO_LOCKUP = 0,
-  SIX_MOTH_LOCKUP = 1,
-  ONE_YEAR_LOCKUP = 2
-}
-const lockupOptions = Object.keys(LockupOptions).filter((element) => !isNaN(Number(element)));
-const lockupPeriods = [1, 180 * DAY, 1 * YEAR];
-const rewardRates = [10, 20, 30];
 
 beforeEach(async () => {
   const ERC20 = await ethers.getContractFactory("MockUSDC");
@@ -31,29 +25,38 @@ describe("FarmCoin", () => {
   it("should reward staker at each stake/unstake", async () => {
     const [owner] = await ethers.getSigners();
 
-    let totalStakesAmount = ethers.BigNumber.from(0);
+    const fctInitOwnerBalance = await farmCoin.balanceOf(owner.address);
+    
+    const staker = new Staker();
+
     for (const lockupOption in lockupOptions) {
       const stakeAmount = parseUnits(random.int(1000, 10000).toString());
 
-      totalStakesAmount = totalStakesAmount.add(stakeAmount);
-
-      const fctInitOwnerBalance = await farmCoin.balanceOf(owner.address);
-
       await usdc.approve(farmCoin.address, stakeAmount);
       await farmCoin.stake(lockupOption, stakeAmount);
+
+      // simulate staking
+      staker.stake(+lockupOption, stakeAmount);
 
       const depositPeriod = 1 * YEAR;
       await EVM.increaseEVMTimestamp(depositPeriod);
 
       await farmCoin.unstake(lockupOption, stakeAmount);
 
-      const rewards = stakeAmount
-        .mul(rewardRates[lockupOption])
-        .mul(ethers.BigNumber.from(depositPeriod))
-        .div(ethers.BigNumber.from(100))
-        .div(ethers.BigNumber.from(1 * YEAR));
+      // calculate desired rewards
+      await staker.unstake(+lockupOption, stakeAmount);
 
-      expect(await farmCoin.balanceOf(owner.address)).to.be.eq(fctInitOwnerBalance.add(rewards))
+      expect(
+        await farmCoin.totalRewardsOfLockupOption(lockupOption, owner.address)
+      ).to.be.eq(staker.totalRewardsLockup(+lockupOption));
+      expect(
+        await farmCoin.totalRewardsOf(owner.address)
+      ).to.be.eq(staker.totalRewards());
+
+      expect(
+        await farmCoin.balanceOf(owner.address)
+      ).to.be.eq(fctInitOwnerBalance.add(staker._totalRewards))
     }
   })
+
 })
