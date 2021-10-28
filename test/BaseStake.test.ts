@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { formatUnits, parseUnits } from "@ethersproject/units";
+import { parseUnits } from "@ethersproject/units";
 import { Contract } from "@ethersproject/contracts";
 import { default as random } from "random";
 import { EVM } from "./helper/evm"
@@ -32,7 +32,7 @@ describe("BaseStake", () => {
 
     let totalStakesAmount = ethers.BigNumber.from(0);
     for (const lockupOption in lockupOptions) {
-      const stakeAmount = parseUnits(random.int(1000, 2000).toString());
+      const stakeAmount = parseUnits(random.int(1000, 10000).toString());
 
       totalStakesAmount = totalStakesAmount.add(stakeAmount);
 
@@ -69,7 +69,7 @@ describe("BaseStake", () => {
 
     let totalStakesAmount = ethers.BigNumber.from(0);
     for (const lockupOption in lockupOptions) {
-      const stakeAmount = parseUnits(random.int(1000, 1000).toString());
+      const stakeAmount = parseUnits(random.int(1000, 10000).toString());
 
       totalStakesAmount = totalStakesAmount.add(stakeAmount);
 
@@ -110,7 +110,7 @@ describe("BaseStake", () => {
 
     let totalStakesAmount = ethers.BigNumber.from(0);
     for (const lockupOption in lockupOptions) {
-      const stakeAmount = parseUnits(random.int(1000, 1000).toString());
+      const stakeAmount = parseUnits(random.int(1000, 10000).toString());
 
       totalStakesAmount = totalStakesAmount.add(stakeAmount);
 
