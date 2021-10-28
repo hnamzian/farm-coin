@@ -189,8 +189,6 @@ contract BaseStake is StakeStates, StakeExecutor, ClaimReward {
     {
         uint256 _stakesBalance = stakesLockupOf(lockupOption_, staker_);
 
-        
-
         if (lockupOption_ == LockupOption.NO_LOCKUP) {
             return _stakesBalance;
         }

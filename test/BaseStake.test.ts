@@ -10,13 +10,13 @@ let baseStake: Contract, usdc: Contract;;
 const DAY = 24 * 60 * 60;
 const YEAR = 365 * DAY;
 
-enum LockupupOptions {
+enum LockupOptions {
   NO_LOCKUP = 0,
   SIX_MOTH_LOCKUP = 1,
   ONE_YEAR_LOCKUP = 2
 }
-const lockupOptions = Object.keys(LockupupOptions).filter((element) => !isNaN(Number(element)));
-const lockupPeriods = [0, 180 * DAY, 365 * DAY];
+const lockupOptions = Object.keys(LockupOptions).filter((element) => !isNaN(Number(element)));
+const lockupPeriods = [1, 180 * DAY, 1 * YEAR];
 
 beforeEach(async () => {
   const ERC20 = await ethers.getContractFactory("MockUSDC");
@@ -89,6 +89,51 @@ describe("BaseStake", () => {
       expect(
         await usdc.balanceOf(baseStake.address)
       ).to.be.eq(initFarmBalance);
+
+      expect(
+        await baseStake.stakesOf(owner.address)
+      ).to.be.eq(0);
+      expect(
+        await baseStake.stakesLockupOf(lockupOption, owner.address)
+      ).to.be.eq(0);
+      expect(
+        await baseStake.totalStakes()
+      ).to.be.eq(0);
+      expect(
+        await baseStake.totalStakesLockup(lockupOption)
+      ).to.be.eq(0);
+    }
+  })
+
+  it("should return tokens and decrease stake balance at unstake", async () => {
+    const [owner] = await ethers.getSigners();
+
+    let totalStakesAmount = ethers.BigNumber.from(0);
+    for (const lockupOption in lockupOptions) {
+      const stakeAmount = parseUnits(random.int(1000, 1000).toString());
+
+      totalStakesAmount = totalStakesAmount.add(stakeAmount);
+
+      const initOwnerBalance = await usdc.balanceOf(owner.address);
+      const initFarmBalance = await usdc.balanceOf(baseStake.address);
+
+      await usdc.approve(baseStake.address, stakeAmount);
+      await baseStake.stake(lockupOption, stakeAmount);
+
+      await EVM.increaseEVMTimestamp(lockupPeriods[lockupOption] - 1);
+
+      await baseStake.unstake(lockupOption, stakeAmount);
+
+      const punishment = +lockupOption == LockupOptions.NO_LOCKUP ?
+        ethers.BigNumber.from(0) :
+        stakeAmount.mul(10).div(100);
+
+      expect(
+        await usdc.balanceOf(owner.address)
+      ).to.be.eq(initOwnerBalance.sub(punishment));
+      expect(
+        await usdc.balanceOf(baseStake.address)
+      ).to.be.eq(initFarmBalance.add(punishment));
 
       expect(
         await baseStake.stakesOf(owner.address)
