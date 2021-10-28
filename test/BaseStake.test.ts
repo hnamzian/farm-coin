@@ -1,10 +1,14 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { parseUnits } from "@ethersproject/units";
+import { formatUnits, parseUnits } from "@ethersproject/units";
 import { Contract } from "@ethersproject/contracts";
 import { default as random } from "random";
+import { EVM } from "./helper/evm"
 
 let baseStake: Contract, usdc: Contract;;
+
+const DAY = 24 * 60 * 60;
+const YEAR = 365 * DAY;
 
 enum LockupupOptions {
   NO_LOCKUP = 0,
@@ -12,9 +16,7 @@ enum LockupupOptions {
   ONE_YEAR_LOCKUP = 2
 }
 const lockupOptions = Object.keys(LockupupOptions).filter((element) => !isNaN(Number(element)));
-
-const DAY = 24 * 60 * 60;
-const YEAR = 365 * DAY;
+const lockupPeriods = [0, 180 * DAY, 365 * DAY];
 
 beforeEach(async () => {
   const ERC20 = await ethers.getContractFactory("MockUSDC");
@@ -59,6 +61,47 @@ describe("BaseStake", () => {
       expect(
         await baseStake.totalStakesLockup(lockupOption)
       ).to.be.eq(stakeAmount);
+    }
+  })
+
+  it("should return tokens and decrease stake balance at unstake", async () => {
+    const [owner] = await ethers.getSigners();
+
+    let totalStakesAmount = ethers.BigNumber.from(0);
+    for (const lockupOption in lockupOptions) {
+      const stakeAmount = parseUnits(random.int(1000, 1000).toString());
+
+      totalStakesAmount = totalStakesAmount.add(stakeAmount);
+
+      const initOwnerBalance = await usdc.balanceOf(owner.address);
+      const initFarmBalance = await usdc.balanceOf(baseStake.address);
+
+      await usdc.approve(baseStake.address, stakeAmount);
+      await baseStake.stake(lockupOption, stakeAmount);
+
+      await EVM.increaseEVMTimestampAndMine(lockupPeriods[lockupOption]);
+
+      await baseStake.unstake(lockupOption, stakeAmount);
+
+      expect(
+        await usdc.balanceOf(owner.address)
+      ).to.be.eq(initOwnerBalance);
+      expect(
+        await usdc.balanceOf(baseStake.address)
+      ).to.be.eq(initFarmBalance);
+
+      expect(
+        await baseStake.stakesOf(owner.address)
+      ).to.be.eq(0);
+      expect(
+        await baseStake.stakesLockupOf(lockupOption, owner.address)
+      ).to.be.eq(0);
+      expect(
+        await baseStake.totalStakes()
+      ).to.be.eq(0);
+      expect(
+        await baseStake.totalStakesLockup(lockupOption)
+      ).to.be.eq(0);
     }
   })
 })
