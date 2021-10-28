@@ -50,16 +50,16 @@ export class Staker {
   updateRewardsLockup = async (lockupOption: LockupOptions) => {
     const timestamp = await EVM.getTimestamp();
     const timePassed = timestamp - this._lastTimeRewarded[lockupOption];
-        
-    this._rewards[lockupOption] = this._rewards[lockupOption]
-    .add(this._stakes[lockupOption]
+    
+    const additiveRewards = this._stakes[lockupOption]
       .mul(rewardRates[lockupOption])
       .mul(ethers.BigNumber.from(timePassed))
       .div(ethers.BigNumber.from(100))
-      .div(ethers.BigNumber.from(1 * YEAR))
-    );
+      .div(ethers.BigNumber.from(1 * YEAR));
+        
+    this._rewards[lockupOption] = this._rewards[lockupOption].add(additiveRewards);
 
-    this._totalRewards = this._totalRewards.add(this._rewards[lockupOption]);
+    this._totalRewards = this._totalRewards.add(additiveRewards);
 
     this._lastTimeRewarded[lockupOption] = timestamp;
 
