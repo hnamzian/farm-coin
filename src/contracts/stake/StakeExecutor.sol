@@ -8,7 +8,15 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract StakeExecutor {
     using SafeERC20 for IERC20;
 
-    address internal stakingToken = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address internal _stakingToken = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+
+    /**
+     * @dev returns address of token can be staked to FarmToken
+     * @return address of staking token
+     */
+    function stakingTokenAddress() public view returns (address) {
+        return _stakingToken;
+    }
 
     /**
      * @dev transferFrom Staking Token (USDC) from staker to Stake contract if allowed
@@ -22,7 +30,7 @@ contract StakeExecutor {
         require(staker_ != address(0), "Zero address");
         require(amount_ > 0, "Zero amount");
 
-        IERC20 _token = IERC20(stakingToken);
+        IERC20 _token = IERC20(_stakingToken);
         require(_token.allowance(staker_, address(this)) >= amount_, "Insufficient allowance");
         _token.safeTransferFrom(staker_, address(this), amount_);
     }
@@ -39,7 +47,7 @@ contract StakeExecutor {
         require(staker_ != address(0), "Zero address");
         require(amount_ > 0, "Zero amount");
 
-        IERC20 _token = IERC20(stakingToken);
+        IERC20 _token = IERC20(_stakingToken);
         _token.safeTransfer(staker_, amount_);
     }
 }
