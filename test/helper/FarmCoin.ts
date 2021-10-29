@@ -38,12 +38,12 @@ export class Staker {
   _lastTimeRewarded = [0, 0, 0];
 
   stake = async (lockupOption: LockupOptions, amount: ethers.BigNumber) => {
-    await this.updateRewardsLockup(lockupOption);
+    await this.updateRewards();
     this._stakes[lockupOption] = this._stakes[lockupOption].add(amount);
   }
 
   unstake = async (lockupOption: LockupOptions, amount: ethers.BigNumber) => {   
-    await this.updateRewardsLockup(lockupOption);
+    await this.updateRewards();
     this._stakes[lockupOption] = this._stakes[lockupOption].sub(amount);
   }
 
