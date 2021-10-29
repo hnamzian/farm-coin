@@ -79,6 +79,10 @@ contract RewardCalculator is RewardStates, StakeStates {
         uint256 stakes_,
         uint256 lastTimeRewarded_
     ) private view returns (uint256) {
+        if (stakes_ == 0) {
+            return 0;
+        }
+        
         uint256 _timePassed = block.timestamp - lastTimeRewarded_;
 
         return
