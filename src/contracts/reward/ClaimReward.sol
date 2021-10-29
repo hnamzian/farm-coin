@@ -22,11 +22,13 @@ contract ClaimReward is RewardCalculator {
 
         _rewardsOf = _calculateRewardsOf(lockupOption_, rewardee_);
 
-        _increaseTotalRewardsOf(lockupOption_, rewardee_, _rewardsOf);
-        _increaseTotalRewards(lockupOption_, _rewardsOf);
-        _updateLastTimeRewardedTo(lockupOption_, rewardee_);
+        if (_rewardsOf > 0) {
+            _increaseTotalRewardsOf(lockupOption_, rewardee_, _rewardsOf);
+            _increaseTotalRewards(lockupOption_, _rewardsOf);
+            _updateLastTimeRewardedTo(lockupOption_, rewardee_);
 
-        emit Rewarded(lockupOption_, rewardee_, _rewardsOf);
+            emit Rewarded(lockupOption_, rewardee_, _rewardsOf);
+        }
     }
 
     /**
