@@ -105,7 +105,7 @@ describe("BaseStake", () => {
     }
   })
 
-  it("should return tokens and decrease stake balance at unstake", async () => {
+  it("should return charge user with 10% punishment for early unstake", async () => {
     const [owner] = await ethers.getSigners();
 
     let totalStakesAmount = ethers.BigNumber.from(0);
