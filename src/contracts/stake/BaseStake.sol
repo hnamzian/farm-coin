@@ -100,7 +100,7 @@ contract BaseStake is StakeStates, StakeExecutor, ClaimReward {
         address staker_,
         uint256 amount_
     ) internal {
-        _reward(lockupOption_, staker_);
+        claim();
     }
 
     /**
@@ -152,7 +152,7 @@ contract BaseStake is StakeStates, StakeExecutor, ClaimReward {
         address staker_,
         uint256 amount_
     ) internal returns (uint256) {
-        _reward(lockupOption_, staker_);
+        claim();
 
         // calculate unstakeable amount
         uint256 _unlockedAmount = _canUnstakeLockup(lockupOption_, staker_);
