@@ -12,6 +12,9 @@ contract RewardCalculator is RewardStates, StakeStates {
      */
     mapping(LockupOption => uint8) internal _rewardRates;
 
+    // base period reward rate assigned
+    uint256 internal _rewardRatePeriod = 365 days;
+
     constructor() {
         _setRewardRate(LockupOption.NO_LOCKUP, 10);
         _setRewardRate(LockupOption.SIX_MOTH_LOCKUP, 20);
@@ -76,12 +79,14 @@ contract RewardCalculator is RewardStates, StakeStates {
         uint256 stakes_,
         uint256 lastTimeRewarded_
     ) private view returns (uint256) {
+        if (stakes_ == 0) {
+            return 0;
+        }
+        
         uint256 _timePassed = block.timestamp - lastTimeRewarded_;
-
-        uint256 _lockupPeriodSeconds = lockupPeriod(lockupOption_);
 
         return
             (stakes_ * _timePassed * uint256(rewardRate(lockupOption_))) /
-            (100 * _lockupPeriodSeconds);
+            (100 * _rewardRatePeriod);
     }
 }

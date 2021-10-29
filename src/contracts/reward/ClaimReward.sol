@@ -18,22 +18,17 @@ contract ClaimReward is RewardCalculator {
         virtual
         returns (uint256 _rewardsOf)
     {
+        require(rewardee_ != address(0), "Zero address");
+
         _rewardsOf = _calculateRewardsOf(lockupOption_, rewardee_);
 
-        _increaseTotalRewardsOf(lockupOption_, rewardee_, _rewardsOf);
-        _increaseTotalRewards(lockupOption_, _rewardsOf);
-        _updateLastTimeRewardedTo(lockupOption_, rewardee_);
+        if (_rewardsOf > 0) {
+            _increaseTotalRewardsOf(lockupOption_, rewardee_, _rewardsOf);
+            _increaseTotalRewards(lockupOption_, _rewardsOf);
+            _updateLastTimeRewardedTo(lockupOption_, rewardee_);
 
-        emit Rewarded(lockupOption_, rewardee_, _rewardsOf);
-    }
-
-    /**
-     * @dev assign amount of tokens must be rewarded to reward claimee
-     * according to its stakes at a specified lockup option
-     * @param lockupOption_ uint8 representing Reward lockup option
-     */
-    function claim(LockupOption lockupOption_) public {
-        _reward(lockupOption_, msg.sender);
+            emit Rewarded(lockupOption_, rewardee_, _rewardsOf);
+        }
     }
 
     /**
@@ -47,7 +42,7 @@ contract ClaimReward is RewardCalculator {
             _lockupOption <= uint8(LockupOption.ONE_YEAR_LOCKUP);
             _lockupOption++
         ) {
-            claim(LockupOption(_lockupOption));
+            _reward(LockupOption(_lockupOption), msg.sender);
         }
     }
 }

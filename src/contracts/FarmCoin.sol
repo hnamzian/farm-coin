@@ -14,7 +14,7 @@ contract FarmCoin is ERC20, ClaimReward, BaseStake {
     function _reward(LockupOption lockupOption_, address rewardee_)
         internal
         virtual
-        override
+        override(ClaimReward)
         returns (uint256 _rewardsOf)
     {
         _rewardsOf = super._reward(lockupOption_, rewardee_);

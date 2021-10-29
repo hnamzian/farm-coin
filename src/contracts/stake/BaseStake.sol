@@ -33,7 +33,8 @@ contract BaseStake is StakeStates, StakeExecutor, ClaimReward {
     event Unstaked(
         LockupOption indexed lockupOption,
         address indexed user,
-        uint256 amount
+        uint256 amount,
+        uint256 punishment
     );
 
     /**
@@ -61,12 +62,12 @@ contract BaseStake is StakeStates, StakeExecutor, ClaimReward {
         public
         virtual
     {
-        _beforeUnstake(lockupOption_, msg.sender, amount_);
+        uint256 _unstakeableAmount = _beforeUnstake(lockupOption_, msg.sender, amount_);
 
         _unstake(lockupOption_, msg.sender, amount_);
 
-        _afterUnstake(lockupOption_, msg.sender, amount_);
-        emit Unstaked(lockupOption_, msg.sender, amount_);
+        _afterUnstake(lockupOption_, msg.sender, _unstakeableAmount);
+        emit Unstaked(lockupOption_, msg.sender, amount_, amount_ - _unstakeableAmount);
     }
 
     /**
@@ -99,7 +100,7 @@ contract BaseStake is StakeStates, StakeExecutor, ClaimReward {
         address staker_,
         uint256 amount_
     ) internal {
-        _reward(lockupOption_, staker_);
+        claim();
     }
 
     /**
@@ -139,35 +140,41 @@ contract BaseStake is StakeStates, StakeExecutor, ClaimReward {
 
     /**
      * @dev pre-processing routin before unstaking token
+     * @dev calculate and process rewarding staker
+     * @dev calculate unstakeable amount of tokens accordging to punishments
      * @param lockupOption_ the reward plan tokens will be unstaked
      * @param staker_ address of staker
      * @param amount_ amount of tokens has been unstaked
+     * @return uint256 unstakeable amount
      */
     function _beforeUnstake(
         LockupOption lockupOption_,
         address staker_,
         uint256 amount_
-    ) internal {
-        _reward(lockupOption_, staker_);
+    ) internal returns (uint256) {
+        claim();
+
+        // calculate unstakeable amount
+        uint256 _unlockedAmount = _canUnstakeLockup(lockupOption_, staker_);
+        uint256 _earlyWithdrawPunishment = ((amount_ - _unlockedAmount) *
+            _earlyWithdrawPunishmentRateX100) / 100;
+        uint256 unstakeableAmount_ = amount_ - _earlyWithdrawPunishment;
+
+        return unstakeableAmount_;
     }
 
     /**
      * @dev post-processing routin after unstaking token
      * @param lockupOption_ the reward plan tokens will be unstaked
      * @param staker_ address of staker
-     * @param amount_ amount of tokens has been unstaked
+     * @param unstakeableAmount_ amount of tokens to be unstaked
      */
     function _afterUnstake(
         LockupOption lockupOption_,
         address staker_,
-        uint256 amount_
+        uint256 unstakeableAmount_
     ) internal {
-        uint256 _unlockedAmount = _canUnstakeLockup(lockupOption_, staker_);
-        uint256 _earlyWithdrawPunishment = ((amount_ - _unlockedAmount) *
-            _earlyWithdrawPunishmentRateX100) / 100;
-        uint256 _transferAmount = amount_ - _earlyWithdrawPunishment;
-
-        _executeUnstake(staker_, _transferAmount);
+        _executeUnstake(staker_, unstakeableAmount_);
     }
 
     /**
@@ -180,7 +187,7 @@ contract BaseStake is StakeStates, StakeExecutor, ClaimReward {
         view
         returns (uint256 _unstakeables)
     {
-        uint256 _stakesBalance = _stakes[lockupOption_][staker_];
+        uint256 _stakesBalance = stakesLockupOf(lockupOption_, staker_);
 
         if (lockupOption_ == LockupOption.NO_LOCKUP) {
             return _stakesBalance;
