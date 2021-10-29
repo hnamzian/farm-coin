@@ -79,7 +79,7 @@ describe("FarmCoin", () => {
       const depositPeriod = 1 * YEAR;
       await EVM.increaseEVMTimestamp(depositPeriod);
 
-      await farmCoin["claim()"]();
+      await farmCoin.claim();
 
       await staker.updateRewards();
       
