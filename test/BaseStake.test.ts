@@ -1,9 +1,12 @@
-import { expect } from "chai";
+import { solidity } from "ethereum-waffle";
+import chai from "chai";
 import { ethers } from "hardhat";
 import { parseUnits } from "@ethersproject/units";
 import { Contract } from "@ethersproject/contracts";
 import { default as random } from "random";
-import { EVM } from "./helper/evm"
+import { EVM } from "./helper/evm";
+
+const { expect } = chai.use(solidity);
 
 let baseStake: Contract, usdc: Contract;;
 
@@ -147,6 +150,71 @@ describe("BaseStake", () => {
       expect(
         await baseStake.totalStakesLockup(lockupOption)
       ).to.be.eq(0);
+    }
+  })
+})
+describe("BaseStake Events", () => {
+  it("should emit events when user staked tokens", async () => {
+    const [owner] = await ethers.getSigners();
+
+    let totalStakesAmount = ethers.BigNumber.from(0);
+    for (const lockupOption in lockupOptions) {
+      const stakeAmount = parseUnits(random.int(1000, 10000).toString());
+
+      totalStakesAmount = totalStakesAmount.add(stakeAmount);
+
+      await usdc.approve(baseStake.address, stakeAmount);
+
+      await expect(baseStake.stake(lockupOption, stakeAmount))
+        .to
+        .emit(baseStake, "Staked")
+        .withArgs(+lockupOption, owner.address, stakeAmount);
+    }
+  })
+
+  it("should emit events when user unstaked tokens", async () => {
+    const [owner] = await ethers.getSigners();
+
+    let totalStakesAmount = ethers.BigNumber.from(0);
+    for (const lockupOption in lockupOptions) {
+      const stakeAmount = parseUnits(random.int(1000, 10000).toString());
+
+      totalStakesAmount = totalStakesAmount.add(stakeAmount);
+
+      await usdc.approve(baseStake.address, stakeAmount);
+      await baseStake.stake(lockupOption, stakeAmount);
+
+      await EVM.increaseEVMTimestampAndMine(lockupPeriods[lockupOption]);
+
+      await expect(baseStake.unstake(lockupOption, stakeAmount))
+        .to
+        .emit(baseStake, "Unstaked")
+        .withArgs(+lockupOption, owner.address, stakeAmount, 0);
+    }
+  })
+
+  it("should emit events when user unstaked tokens", async () => {
+    const [owner] = await ethers.getSigners();
+
+    let totalStakesAmount = ethers.BigNumber.from(0);
+    for (const lockupOption in lockupOptions) {
+      const stakeAmount = parseUnits(random.int(1000, 10000).toString());
+
+      totalStakesAmount = totalStakesAmount.add(stakeAmount);
+
+      await usdc.approve(baseStake.address, stakeAmount);
+      await baseStake.stake(lockupOption, stakeAmount);
+
+      await EVM.increaseEVMTimestamp(lockupPeriods[lockupOption] - 1);
+
+      const punishment = +lockupOption == LockupOptions.NO_LOCKUP ?
+        ethers.BigNumber.from(0) :
+        stakeAmount.mul(10).div(100);
+
+      await expect(baseStake.unstake(lockupOption, stakeAmount))
+        .to
+        .emit(baseStake, "Unstaked")
+        .withArgs(+lockupOption, owner.address, stakeAmount, punishment);
     }
   })
 })
