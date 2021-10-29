@@ -18,6 +18,8 @@ contract ClaimReward is RewardCalculator {
         virtual
         returns (uint256 _rewardsOf)
     {
+        require(rewardee_ != address(0), "Zero address");
+
         _rewardsOf = _calculateRewardsOf(lockupOption_, rewardee_);
 
         _increaseTotalRewardsOf(lockupOption_, rewardee_, _rewardsOf);
